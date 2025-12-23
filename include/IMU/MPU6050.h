@@ -1,7 +1,7 @@
 #ifndef MPU6050_H
 #define MPU6050_H
 #include <stdint.h>
-#include <IMU.h>
+#include "IMU.h"
 #include <I2C_Handler.h>
 
 //most code from offical raspberry pi pico example
