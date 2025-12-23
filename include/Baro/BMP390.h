@@ -1,4 +1,4 @@
-#include <baro/baro.h>
+#include <Baro/baro.h>
 #include <I2C_Handler.h>
 
 class BMP390 : public Baro {

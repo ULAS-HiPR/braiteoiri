@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include <sensor.h>
+#include "../sensor.h"
 
 //12 bytes
 struct accle_data
