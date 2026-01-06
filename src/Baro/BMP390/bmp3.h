@@ -39,8 +39,6 @@
 /*!
  * @defgroup bmp3 BMP3
  */
-#include "../../config.h"
- #ifdef BARO_BMP390
  #ifndef _BMP3_H
  #define _BMP3_H
  
@@ -551,4 +549,3 @@
  #endif /* End of CPP guard */
  
  #endif /* _BMP3_H */
-#endif

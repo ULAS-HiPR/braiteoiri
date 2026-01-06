@@ -38,8 +38,6 @@
 
 /*! @file bmp3_defs.h
  * @brief Sensor driver for BMP3 sensor */
-#include "../../config.h"
-#ifdef BARO_BMP390
 
  #ifndef BMP3_DEFS_H_
  #define BMP3_DEFS_H_
@@ -919,4 +917,4 @@
  #endif /* End of CPP guard */
  
  #endif /* BMP3_DEFS_H_ */
- #endif
+

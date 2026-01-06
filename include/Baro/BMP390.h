@@ -1,12 +1,15 @@
 #include <Baro/baro.h>
-#include <I2C_Handler.h>
+#include <I2C/I2C_Handler.h>
+#include <cstdio>
+#include "../src/Baro/BMP390/bmp3_defs.h"
+#include "../src/Baro/BMP390/bmp3.h"
 
 class BMP390 : public Baro {
 public:
     BMP390(I2C_Handler& i2c_handler);
-    void init() override;
+    bool init() override;
     ~BMP390();
-    void update(baro_data& data) override;
+    bool update(baro_data* data) override;
 private:
     int cs;
     void read();

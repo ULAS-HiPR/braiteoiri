@@ -1,4 +1,4 @@
-#include "IMU.h"
+#include <IMU.h>
 #include <vector>
 
 class MockIMU : public IMU {
@@ -8,9 +8,9 @@ public:
 
     bool init() override { index = 0; return true; }
 
-    bool read(imu_data& out) override {
+    bool update(imu_data* out) override {
         if (index >= data.size()) return false;
-        out = data[index++];
+        out = &data[index++];
         return true;
     }
 

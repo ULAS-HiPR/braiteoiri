@@ -29,6 +29,5 @@ struct imu_data
 class IMU : Sensor<imu_data> {
 public:
     virtual bool init() = 0;
-    virtual bool read(imu_data& out) = 0;
-    void update(imu_data* data) override;
+    bool update(imu_data* data) override;
 };

@@ -1,0 +1,12 @@
+{
+  "name": "braiteoiri",
+    "version": "0.0.0",
+  "dependencies": [
+    {"name": "comheadan",
+    "version": "*"}
+    ],
+   "build": {
+    "includeDir": "include",
+    "srcDir": "src"
+  }
+}

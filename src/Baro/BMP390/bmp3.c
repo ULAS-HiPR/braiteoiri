@@ -1,5 +1,3 @@
-#include "../../config.h"
-#ifdef BARO_BMP390
 /**
 * Copyright (c) 2022 Bosch Sensortec GmbH. All rights reserved.
 *
@@ -2960,4 +2958,3 @@
  
      return rslt;
  }
-#endif

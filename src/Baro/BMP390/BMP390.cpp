@@ -1,30 +1,32 @@
 #include <Baro/BMP390.h>
 
 extern "C" BMP3_INTF_RET_TYPE bmp3_spi_read(uint8_t reg_addr, uint8_t *data, uint32_t len, void *intf_ptr) {
-    SPI* spi = reinterpret_cast<SPI*>(intf_ptr);
-    spi->read_no_cs( reg_addr, data, len);
+    //SPI* spi = reinterpret_cast<SPI*>(intf_ptr);
+    //spi->read_no_cs( reg_addr, data, len);
+    //tbd
     return 0;
 }
 
 extern "C" BMP3_INTF_RET_TYPE bmp3_spi_write(uint8_t reg_addr, const uint8_t *data, uint32_t len, void *intf_ptr) {
-    SPI* spi = reinterpret_cast<SPI*>(intf_ptr);
+    //SPI* spi = reinterpret_cast<SPI*>(intf_ptr);
     //spi->write_no_cs(reg_addr, data, len); 
+    //tbd
     return 0;
 }
 
 extern "C" void delay_us(uint32_t period, void *intf_ptr) {
-    printf("Delay: %d\n", period);
+    printf("Delay: %ld\n", period);
     printf("fake sleep cause debugger not like");
 }
 
-BMP390::BMP390(I2C_Handler& i2c_handler) : i2c_handler(i2c_handler) {
+BMP390::BMP390(I2C_Handler& i2c_handler) {
     printf("Barometer created\n");
 
     baro.intf = BMP3_SPI_INTF;
-    baro.read = bmp3_spi_read;
-    baro.write = bmp3_spi_write;
-    baro.delay_us = delay_us;
-    baro.intf_ptr = spi;
+    //baro.read = bmp3_spi_read;
+    //baro.write = bmp3_spi_write;
+    //baro.delay_us = delay_us;
+    //baro.intf_ptr = spi;
     baro.dummy_byte = 0;
 
     printf("settings init\n");
@@ -35,18 +37,18 @@ BMP390::BMP390(I2C_Handler& i2c_handler) : i2c_handler(i2c_handler) {
     ////spi->cs_deselect(cs);
     //bmp3_check_rslt("bmp3_soft_reset", rslt);
     
-    spi->cs_select(cs);
-    int8_t rslt = bmp3_init(&baro);
-    uint8_t tx = 0x00;
-    uint8_t rx[2];
+    //spi->cs_select(cs);
+    //int8_t rslt = bmp3_init(&baro);
+    //uint8_t tx = 0x00;
+    //uint8_t rx[2];
     //
-    spi->read_no_cs(tx, rx, 2);
-    spi->cs_deselect(cs);
+    //spi->read_no_cs(tx, rx, 2);
+    //spi->cs_deselect(cs);
 
-    for (int i = 0; i < 2; i++) {
-        printf("rx[%d]: %02x\n", i, rx[i]);
-    }
-    bmp3_check_rslt("bmp3_init", rslt);
+    //for (int i = 0; i < 2; i++) {
+    //    printf("rx[%d]: %02x\n", i, rx[i]);
+    //}
+    //bmp3_check_rslt("bmp3_init", rslt);
     
     printf("Barometer initialized\n");
   
@@ -75,21 +77,22 @@ void BMP390::read(){
     rslt = bmp3_set_sensor_settings(settings_sel, &settings, &baro);
     bmp3_check_rslt("bmp3_set_sensor_settings", rslt);
     struct bmp3_data data;
-    spi->cs_select(cs);
+    //spi->cs_select(cs);
     rslt = bmp3_get_sensor_data(sensor_comp, &data, &baro);
-    spi->cs_deselect(cs);
+    //spi->cs_deselect(cs);
     bmp3_check_rslt("bmp3_get_sensor_data", rslt);
-    printf("Pressure: %d\n", data.pressure);
-    printf("Temperature: %d\n", data.temperature);
+    printf("Pressure: %f\n", data.pressure);
+    printf("Temperature: %f\n", data.temperature);
 
 }
 
-void BMP390::update(baro_data& data){
+bool BMP390::update(baro_data* data){
     read();
     // Process altitude data
     
     printf("Barometer update\n");
-    data.altitude = 10;
+    data->altitude = 10;
+    return true;
 }
 
 void BMP390::bmp3_check_rslt(const char api_name[], int8_t rslt)

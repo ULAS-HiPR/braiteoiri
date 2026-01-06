@@ -1,4 +1,5 @@
-#include <sensor.h>
+#include "../sensor.h"
+#include <stdint.h>
 
 //10 bytes update
 struct baro_data
@@ -11,5 +12,5 @@ struct baro_data
 class Baro : public Sensor<baro_data> {
 public:
     virtual bool init() = 0;
-    void update(baro_data* data) override;
+    bool update(baro_data* data) override;
 };

@@ -2,7 +2,8 @@
 #define MPU6050_H
 #include <stdint.h>
 #include "IMU.h"
-#include <I2C_Handler.h>
+#include <I2C/I2C_Handler.h>
+#include <cstdio>
 
 //most code from offical raspberry pi pico example
 typedef enum {
@@ -17,9 +18,8 @@ class MPU6050 : public IMU {
     public:
         explicit MPU6050(I2C_Handler& i2c_handler)
         : i2c_handler(i2c_handler) {}
-
         bool init() override;
-        bool read(imu_data& out) override;
+        bool update(imu_data* out) override;
     
     private:
         void reset();
