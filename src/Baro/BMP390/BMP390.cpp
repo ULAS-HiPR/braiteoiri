@@ -18,7 +18,7 @@ extern "C" void delay_us(uint32_t period, void *intf_ptr) {
 }
 
 BMP390::BMP390(I2C_Handler& i2c_handler) {
-    intface_type = 0;
+    interface_type = 0;
     i2c = &i2c_handler;
     printf("Barometer created\n");
 }
