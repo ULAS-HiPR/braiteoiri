@@ -28,9 +28,9 @@ bool MPU6050::update(imu_data* out){
         case MPU6050_RANGE_16_G: accel_scale = 2048.0; break;
     }
 
-    out->accel.x = ((float)accel[0])/ accel_scale;
-    out->accel.y = ((float)accel[1])/ accel_scale;
-    out->accel.z = ((float)accel[2])/ accel_scale;
+    out->acceleration.x = ((float)accel[0])/ accel_scale;
+    out->acceleration.y = ((float)accel[1])/ accel_scale;
+    out->acceleration.z = ((float)accel[2])/ accel_scale;
     return true;
 };
 
