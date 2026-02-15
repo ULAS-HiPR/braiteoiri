@@ -7,8 +7,8 @@
 
 class BMP390 : public Baro {
 public:
-    BMP390(I2C_Handler *i2c_handler);
-    BMP390(SPI_Handler *spi_handler);
+    BMP390(I2C_Handler& i2c_handler);
+    BMP390(SPI_Handler& spi_handler);
     bool init() override;
     ~BMP390();
     bool update(baro_data* data) override;

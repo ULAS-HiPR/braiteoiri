@@ -1,3 +1,4 @@
+#pragma once
 #include "../sensor.h"
 #include <stdint.h>
 #include <data.h>

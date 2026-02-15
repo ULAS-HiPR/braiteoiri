@@ -1,12 +1,12 @@
 #include <Baro/BMP390.h>
 
-extern "C" BMP3_INTF_RET_TYPE bmp3_spi_read(uint8_t reg_addr, uint8_t *data, uint32_t len, void *intf_ptr) {
+extern "C" BMP3_INTF_RET_TYPE bmp3_spi_read(uint8_t reg_addr, uint8_t *data, uint16_t len, void *intf_ptr) {
     SPI_Handler* spi = reinterpret_cast<SPI_Handler*>(intf_ptr);
     spi->read_no_cs( reg_addr, data, len);
     return 0;
 }
 
-extern "C" BMP3_INTF_RET_TYPE bmp3_spi_write(uint8_t reg_addr, const uint8_t *data, uint32_t len, void *intf_ptr) {
+extern "C" BMP3_INTF_RET_TYPE bmp3_spi_write(uint8_t reg_addr, const uint8_t *data, uint16_t len, void *intf_ptr) {
     SPI_Handler* spi = reinterpret_cast<SPI_Handler*>(intf_ptr);
     spi->write_no_cs(reg_addr, data, len); 
     return 0;
