@@ -13,7 +13,7 @@ extern "C" BMP3_INTF_RET_TYPE bmp3_spi_write(uint8_t reg_addr, const uint8_t *da
 }
 
 extern "C" void delay_us(uint32_t period, void *intf_ptr) {
-    printf("Delay: %ld\n", period);
+    printf("Delay: %u\n", period);
     printf("fake sleep cause debugger not like");
 }
 

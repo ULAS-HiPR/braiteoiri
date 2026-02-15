@@ -65,7 +65,7 @@ bool MPU6050::get_id(){
 }
 
 void MPU6050::set_range(mpu6050_accel_range_t accel_range_in){
-    uint8_t data[2] = {MPU6050_ACCEL_CONFIG, (accel_range_in << 3)};
+    uint8_t data[2] = {MPU6050_ACCEL_CONFIG, static_cast<uint8_t>(accel_range_in << 3)};
     i2c_handler.write(MPU6050_ADDRESS, data, 1);
     printf("MPU6050 set range: %d\n", accel_range_in);
     update_range();
