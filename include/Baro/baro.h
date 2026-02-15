@@ -6,5 +6,5 @@
 class Baro : public Sensor<baro_data> {
 public:
     virtual bool init() = 0;
-    bool update(baro_data* data) override;
+    virtual bool update(baro_data* data) = 0;
 };
