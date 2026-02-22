@@ -53,6 +53,17 @@ BMP390::BMP390(SPI_Handler& spi_handler) {
   
 }
 
+bool BMP390::init() {
+    if(interface_type == 0 && i2c) {
+        // TODO: I2C init here
+        return true;
+    } else if(interface_type == 1 && spi) {
+        // SPI already initialized in constructor
+        return true;
+    }
+    return false;
+}
+
 void BMP390::read(){
     int8_t rslt;
 
