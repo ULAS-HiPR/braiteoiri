@@ -14,7 +14,8 @@ extern "C" BMP3_INTF_RET_TYPE bmp3_spi_write(uint8_t reg_addr, const uint8_t *da
 
 extern "C" void delay_us(uint32_t period, void *intf_ptr) {
     SPI_Handler *spi = reinterpret_cast<SPI_Handler*>(intf_ptr);
-    spi->delay_us(period);
+    period *= 1000; // Convert microseconds to milliseconds
+    spi->delay_ms(period);
 }
 
 BMP390::BMP390(I2C_Handler& i2c_handler) {
@@ -50,10 +51,6 @@ BMP390::BMP390(SPI_Handler& spi_handler) {
     
     printf("Barometer initialized\n");
   
-}
-
-BMP390::~BMP390(){
-    printf("Barometer destroyed\n");
 }
 
 void BMP390::read(){
