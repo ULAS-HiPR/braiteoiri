@@ -17,9 +17,7 @@ extern "C" void delay_us(uint32_t period, void *intf_ptr) {
     printf("fake sleep cause debugger not like");
 }
 
-BMP390::BMP390(I2C_Handler& i2c_handler) {
-    interface_type = 0;
-    i2c = &i2c_handler;
+MP
     printf("Barometer created\n");
 }
 
