@@ -10,7 +10,7 @@ public:
     BMP390(I2C_Handler& i2c_handler);
     BMP390(SPI_Handler& spi_handler);
     bool init() override;
-    ~BMP390();
+    ~BMP390() = default;
     bool update(baro_data* data) override;
 private:
     int interface_type{-1}; //-1 = not set, 0 = I2C, 1 = SPI
