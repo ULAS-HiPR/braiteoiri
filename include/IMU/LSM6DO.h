@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "IMU.h"
 #include <I2C/I2C_Handler.h>
+#include <SPI/SPI_Handler.h>
 #include <cstdio>
 
 
