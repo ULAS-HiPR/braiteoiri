@@ -22,7 +22,6 @@
 #define MX25L12845G
 
 #ifdef    MCU8051
-#include    <8051.h>
 #endif
 
 /* Note:

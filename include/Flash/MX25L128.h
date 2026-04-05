@@ -1,4 +1,7 @@
 #include <cstdint>
+#include <cstdio>
+#include <Flash/flash.h>
+
 class MX25L128 : public Flash {
     public:
         MX25L128();
