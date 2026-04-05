@@ -7,6 +7,7 @@
  *
  * $Id: MX25_CMD.h,v 1.22 2016/07/12 08:47:27 mxclldb1 Exp $
  */
+#ifdef USING_THIS_CODE
 #ifndef    __MX25_CMD_H__
 #define    __MX25_CMD_H__
 
@@ -210,3 +211,4 @@ void SwitchBank( BOOL bank);
 extern BOOL  flash_bank_flag ;
 
 #endif    /* __MX25_CMD_H__ */
+#endif

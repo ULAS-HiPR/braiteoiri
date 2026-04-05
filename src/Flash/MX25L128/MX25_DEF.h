@@ -7,6 +7,8 @@
  * $Id: MX25_DEF.h,v 1.582 2017/06/15 09:51:20 mxclldb1 Exp $
  */
 
+#ifdef USING_THIS_CODE
+
 #ifndef    __MX25_DEF_H__
 #define    __MX25_DEF_H__
 /*
@@ -298,3 +300,4 @@ typedef    unsigned char     BOOL;
 #endif
 #endif    /* end of __MX25_DEF_H__  */
 
+#endif

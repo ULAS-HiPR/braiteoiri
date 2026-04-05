@@ -8,6 +8,7 @@
  * $Id: MX25_APP.c,v 1.4 2012/01/03 08:00:06 modelqa Exp $
  */
 
+#ifdef USING_THIS_CODE
 #include    <stdlib.h>
 #include    "MX25_CMD.h"
 
@@ -156,3 +157,5 @@ uint8 FlashReadWrite_Test( uint8 QPI_Enable )
 
 
 
+
+#endif

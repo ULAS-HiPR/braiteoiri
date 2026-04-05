@@ -7,6 +7,7 @@
  * $Id: MX25_CMD.c,v 1.28 2017/01/10 01:32:35 mxclldb1 Exp $
  */
 
+#ifdef USING_THIS_CODE
 #include "MX25_CMD.h"
 
  BOOL  flash_bank_flag = 0 ; 
@@ -2722,3 +2723,4 @@ ReturnMsg CMD_NOP( FlashStatus *fsptr )
 }
 
 
+#endif
