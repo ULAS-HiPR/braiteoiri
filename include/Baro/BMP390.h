@@ -1,9 +1,11 @@
+#pragma once
+
 #include <Baro/baro.h>
 #include <I2C/I2C_Handler.h>
 #include <SPI/SPI_Handler.h>
 #include <cstdio>
-#include "../src/Baro/BMP390/bmp3_defs.h"
-#include "../src/Baro/BMP390/bmp3.h"
+#include "../../src/Baro/BMP390/bmp3_defs.h"
+#include "../../src/Baro/BMP390/bmp3.h"
 
 class BMP390 : public Baro {
 public:
@@ -23,6 +25,4 @@ private:
     struct bmp3_settings settings;
     void bmp3_check_rslt(const char api_name[], int8_t rslt);
 };
-
-
 
