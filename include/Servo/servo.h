@@ -4,8 +4,9 @@
 
 class Servo {
     public:
-        virtual bool init();
-        virtual bool set_poisiton(int8_t position);
+        virtual bool init() = 0;
+        virtual bool set_positon(int8_t position) = 0;
+        virtual ~Servo() = default;
 
     private:
         int8_t current_position;
