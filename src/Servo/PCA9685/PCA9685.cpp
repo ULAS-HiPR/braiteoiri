@@ -1,4 +1,4 @@
-#include "PCA9685.h"
+#include "../../../include/Servo/PCA9685.h"
 #include <cmath>
 
 bool PCA9685Servo::init() {

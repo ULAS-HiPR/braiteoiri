@@ -102,13 +102,13 @@ bool MX25L128::page_program(uint32_t address, const uint8_t* data, size_t length
     cs_low();
     send_cmd(MX25_CMD_PP);
     send_addr(address);
-    _spi.write(0, const_cast<uint8_t*>(data), length);
+    _spi.write(1, 0, const_cast<uint8_t*>(data), length); // FIX THIS TOO
     cs_high();
     return wait_ready(10);  // page program takes up to 1.5ms
 }
 
 void MX25L128::send_cmd(uint8_t cmd) {
-    _spi.write(0, &cmd, 1);
+    _spi.write(1, 0, &cmd, 1); // ADD ACTUAL PIN
 }
 
 void MX25L128::send_addr(uint32_t address) {
@@ -117,5 +117,5 @@ void MX25L128::send_addr(uint32_t address) {
         (uint8_t)(address >>  8),
         (uint8_t)(address >>  0)
     };
-    _spi.write(0, addr, 3);
+    _spi.write(1, 0, addr, 3); // MAKE OKAY ADD ACTUAL PIN
 }

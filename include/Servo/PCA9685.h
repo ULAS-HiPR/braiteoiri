@@ -2,7 +2,7 @@
 #define PCA9685_H
 
 #include <stdint.h>
-#include "Servo.h"
+#include "servo.h"
 #include <I2C/I2C_Handler.h>
 
 class PCA9685Servo : public Servo {

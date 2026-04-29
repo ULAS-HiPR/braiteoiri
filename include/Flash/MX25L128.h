@@ -3,8 +3,8 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <comheadan/include/SPI/SPI_Handler.h>
-#include <flash.h>
+#include <SPI/SPI_Handler.h>
+#include "flash.h"
 
 #define MX25_FLASH_SIZE     0x1000000  // 16MB
 #define MX25_SECTOR_SIZE    0x1000     // 4KB is the minimum that can be erased
