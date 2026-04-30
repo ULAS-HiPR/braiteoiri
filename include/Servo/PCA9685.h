@@ -16,9 +16,9 @@ class PCA9685Servo : public Servo {
         bool set_position(int16_t position) override;
 
     private:
-        void reset();
-        void set_pwm_freq(uint16_t freq);
-        void set_pwm(uint8_t channel, uint16_t on, uint16_t off);
+        bool reset();
+        bool set_pwm_freq(uint16_t freq);
+        bool set_pwm(uint8_t channel, uint16_t on, uint16_t off);
         uint16_t angle_to_pwm(int16_t angle);
 
         I2C_Handler& i2c_handler;

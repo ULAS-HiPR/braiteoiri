@@ -4,15 +4,15 @@ bool MX25L128::init() {
     cs_high();
 
     // wake from deep power down just in case
-    send_cmd(MX25_CMD_RDP);
+    if (!send_cmd(MX25_CMD_RDP)) return false;
     _spi.delay_ms(1);
 
     // read chip ID and verify it matches expected 0xC22018
     uint8_t id[3];
     cs_low();
-    send_cmd(MX25_CMD_RDID);
-    _spi.read(0, 0, id, 3);
+    bool ok = send_cmd(MX25_CMD_RDID) && _spi.receive(id, sizeof(id));
     cs_high();
+    if (!ok) return false;
 
     uint32_t chip_id = ((uint32_t)id[0] << 16) |
                        ((uint32_t)id[1] <<  8) |
@@ -22,18 +22,20 @@ bool MX25L128::init() {
 }
 
 bool MX25L128::read(uint32_t address, uint8_t* buffer, size_t length) {
-    if (address + length > MX25_FLASH_SIZE) return false;
+    if (address >= MX25_FLASH_SIZE || length > MX25_FLASH_SIZE - address) return false;
 
     cs_low();
-    send_cmd(MX25_CMD_READ);
-    send_addr(address);
-    _spi.read(0, 0, buffer, length);
+    bool ok = send_cmd(MX25_CMD_READ) &&
+              send_addr(address) &&
+              _spi.receive(buffer, length);
     cs_high();
 
-    return true;
+    return ok;
 }
 
 bool MX25L128::erase(uint32_t address, size_t length) {
+    if (address >= MX25_FLASH_SIZE || length > MX25_FLASH_SIZE - address) return false;
+
     // erase all sectors that overlap the requested range
     uint32_t sector_start = address & ~(MX25_SECTOR_SIZE - 1);
     uint32_t sector_end   = (address + length + MX25_SECTOR_SIZE - 1)
@@ -66,8 +68,9 @@ bool MX25L128::write(uint32_t address, const uint8_t* data, size_t length) {
 
 bool MX25L128::write_enable() {
     cs_low();
-    send_cmd(MX25_CMD_WREN);
+    bool ok = send_cmd(MX25_CMD_WREN);
     cs_high();
+    if (!ok) return false;
     return (read_status() & 0x02) != 0;  // WEL bit should be set
 }
 
@@ -80,42 +83,43 @@ bool MX25L128::wait_ready(uint32_t timeout_ms) {
 }
 
 uint8_t MX25L128::read_status() {
-    uint8_t status;
+    uint8_t status = 0xFF;
     cs_low();
-    send_cmd(MX25_CMD_RDSR);
-    _spi.read(0, 0, &status, 1);
+    bool ok = send_cmd(MX25_CMD_RDSR) && _spi.receive(&status, 1);
     cs_high();
+    if (!ok) return 0xFF;
     return status;
 }
 
 bool MX25L128::sector_erase(uint32_t address) {
     if (!write_enable()) return false;
     cs_low();
-    send_cmd(MX25_CMD_SE);
-    send_addr(address);
+    bool ok = send_cmd(MX25_CMD_SE) && send_addr(address);
     cs_high();
+    if (!ok) return false;
     return wait_ready(500);  // sector erase takes up to 400ms per MX25_DEF.h
 }
 
 bool MX25L128::page_program(uint32_t address, const uint8_t* data, size_t length) {
     if (!write_enable()) return false;
     cs_low();
-    send_cmd(MX25_CMD_PP);
-    send_addr(address);
-    _spi.write(1, 0, const_cast<uint8_t*>(data), length); // FIX THIS TOO
+    bool ok = send_cmd(MX25_CMD_PP) &&
+              send_addr(address) &&
+              _spi.transmit(data, length);
     cs_high();
+    if (!ok) return false;
     return wait_ready(10);  // page program takes up to 1.5ms
 }
 
-void MX25L128::send_cmd(uint8_t cmd) {
-    _spi.write(1, 0, &cmd, 1); // ADD ACTUAL PIN
+bool MX25L128::send_cmd(uint8_t cmd) {
+    return _spi.transmit(&cmd, 1);
 }
 
-void MX25L128::send_addr(uint32_t address) {
+bool MX25L128::send_addr(uint32_t address) {
     uint8_t addr[3] = {
         (uint8_t)(address >> 16),
         (uint8_t)(address >>  8),
         (uint8_t)(address >>  0)
     };
-    _spi.write(1, 0, addr, 3); // MAKE OKAY ADD ACTUAL PIN
+    return _spi.transmit(addr, sizeof(addr));
 }

@@ -9,13 +9,13 @@ bool PCA9685Servo::init() {
     servo_debug.pca9685_init_count++;
 
     servo_debug.stage = SERVO_DEBUG_STAGE_PCA_RESET;
-    reset();
+    if (!reset()) return false;
 
     servo_debug.stage = SERVO_DEBUG_STAGE_PCA_MODE2;
     uint8_t mode2[2] = {MODE2, MODE2_OUTDRV};
-    i2c_handler.write(address, mode2, 2);
+    if (!i2c_handler.write(address, mode2, 2)) return false;
 
-    set_pwm_freq(50);
+    if (!set_pwm_freq(50)) return false;
     servo_debug.stage = SERVO_DEBUG_STAGE_PCA_INIT_DONE;
     return true;
 }
@@ -31,17 +31,17 @@ bool PCA9685Servo::set_position(int16_t position) {
     servo_debug.servo_angle = position;
     servo_debug.servo_pwm = pwm;
 
-    set_pwm(channel, 0, pwm);
+    if (!set_pwm(channel, 0, pwm)) return false;
     current_position = position;
     return true;
 }
 
-void PCA9685Servo::reset() {
+bool PCA9685Servo::reset() {
     uint8_t data[2] = {MODE1, 0x00};
-    i2c_handler.write(address, data, 2);
+    return i2c_handler.write(address, data, 2);
 }
 
-void PCA9685Servo::set_pwm_freq(uint16_t freq) {
+bool PCA9685Servo::set_pwm_freq(uint16_t freq) {
     servo_debug.stage = SERVO_DEBUG_STAGE_PCA_FREQ_START;
 
     float prescaleval = 25000000.0;
@@ -52,26 +52,27 @@ void PCA9685Servo::set_pwm_freq(uint16_t freq) {
     uint8_t prescale = static_cast<uint8_t>(std::floor(prescaleval + 0.5));
 
     uint8_t oldmode = 0;
-    i2c_handler.read(address, MODE1, &oldmode, 1);
+    if (!i2c_handler.read(address, MODE1, &oldmode, 1)) return false;
     servo_debug.pca9685_mode1_before_prescale = oldmode;
 
     uint8_t sleep[2] = {MODE1, static_cast<uint8_t>((oldmode & ~MODE1_RESTART) | MODE1_SLEEP)};
-    i2c_handler.write(address, sleep, 2);
+    if (!i2c_handler.write(address, sleep, 2)) return false;
 
     uint8_t data[2] = {PRESCALE, prescale};
     servo_debug.pca9685_prescale = prescale;
-    i2c_handler.write(address, data, 2);
+    if (!i2c_handler.write(address, data, 2)) return false;
 
     uint8_t wake[2] = {MODE1, static_cast<uint8_t>((oldmode & ~MODE1_SLEEP) | MODE1_AI)};
-    i2c_handler.write(address, wake, 2);
+    if (!i2c_handler.write(address, wake, 2)) return false;
     i2c_handler.delay_ms(5);
 
     uint8_t restart[2] = {MODE1, static_cast<uint8_t>(wake[1] | MODE1_RESTART)};
-    i2c_handler.write(address, restart, 2);
+    if (!i2c_handler.write(address, restart, 2)) return false;
     servo_debug.stage = SERVO_DEBUG_STAGE_PCA_FREQ_DONE;
+    return true;
 }
 
-void PCA9685Servo::set_pwm(uint8_t ch, uint16_t on, uint16_t off) {
+bool PCA9685Servo::set_pwm(uint8_t ch, uint16_t on, uint16_t off) {
     servo_debug.stage = SERVO_DEBUG_STAGE_PWM_WRITE;
     servo_debug.servo_channel = ch;
     servo_debug.pwm_on = on;
@@ -85,7 +86,7 @@ void PCA9685Servo::set_pwm(uint8_t ch, uint16_t on, uint16_t off) {
         static_cast<uint8_t>(off & 0xFF),
         static_cast<uint8_t>(off >> 8)
     };
-    i2c_handler.write(address, data, 5);
+    return i2c_handler.write(address, data, 5);
 }
 
 uint16_t PCA9685Servo::angle_to_pwm(int16_t angle) {

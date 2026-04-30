@@ -36,8 +36,8 @@ class MX25L128 : public Flash{
 
         void     cs_low();
         void     cs_high();
-        void     send_cmd(uint8_t cmd);
-        void     send_addr(uint32_t address);
+        bool     send_cmd(uint8_t cmd);
+        bool     send_addr(uint32_t address);
         bool     wait_ready(uint32_t timeout_ms);  // poll WIP bit
         bool     write_enable();
         uint8_t  read_status();

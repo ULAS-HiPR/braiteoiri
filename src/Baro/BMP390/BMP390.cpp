@@ -2,20 +2,17 @@
 
 extern "C" BMP3_INTF_RET_TYPE bmp3_spi_read(uint8_t reg_addr, uint8_t *data, uint32_t len, void *intf_ptr) {
     SPI_Handler* spi = reinterpret_cast<SPI_Handler*>(intf_ptr);
-    spi->read_no_cs( reg_addr, data, len);
-    return 0;
+    return spi->read_no_cs(reg_addr, data, static_cast<uint16_t>(len)) ? 0 : -1;
 }
 
 extern "C" BMP3_INTF_RET_TYPE bmp3_spi_write(uint8_t reg_addr, const uint8_t *data, uint32_t len, void *intf_ptr) {
     SPI_Handler* spi = reinterpret_cast<SPI_Handler*>(intf_ptr);
-    spi->write_no_cs(reg_addr, data, len); 
-    return 0;
+    return spi->write_no_cs(reg_addr, data, static_cast<uint16_t>(len)) ? 0 : -1;
 }
 
 extern "C" void delay_us(uint32_t period, void *intf_ptr) {
     SPI_Handler *spi = reinterpret_cast<SPI_Handler*>(intf_ptr);
-    period *= 1000; // Convert microseconds to milliseconds
-    spi->delay_ms(period);
+    spi->delay_ms(static_cast<int>((period + 999U) / 1000U));
 }
 
 BMP390::BMP390(I2C_Handler& i2c_handler) {
