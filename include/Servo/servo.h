@@ -5,7 +5,7 @@
 class Servo {
     public:
         virtual bool init() = 0;
-        virtual bool set_position(int8_t position) = 0;
+        virtual bool set_position(int16_t position) = 0;
         virtual ~Servo() = default;
-        int8_t current_position;
+        int16_t current_position;
 };
