@@ -7,7 +7,7 @@
 #include <array>
 #include <cstdint>
 
-enum ms5607_osr_t : std::uint8_t {
+enum ms5607_osr_t : uint8_t {
     MS5607_OSR_256 = 0x00,
     MS5607_OSR_512 = 0x02,
     MS5607_OSR_1024 = 0x04,
