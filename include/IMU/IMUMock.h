@@ -1,4 +1,7 @@
-#include <IMU.h>
+#pragma once
+
+#include <IMU/IMU.h>
+#include <cstddef>
 #include <vector>
 
 class MockIMU : public IMU {
@@ -9,8 +12,11 @@ public:
     bool init() override { index = 0; return true; }
 
     bool update(imu_data* out) override {
-        if (index >= data.size()) return false;
-        out = &data[index++];
+        if ((out == nullptr) || (index >= data.size())) {
+            return false;
+        }
+
+        *out = data[index++];
         return true;
     }
 
