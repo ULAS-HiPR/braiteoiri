@@ -1,7 +1,7 @@
 #include <Flash/MX25L128.h>
 
 bool MX25L128::init() {
-    cs_high();
+    _spi.cs_high();
 
     // wake from deep power down just in case
     if (!send_cmd(MX25_CMD_RDP)) return false;
@@ -9,9 +9,9 @@ bool MX25L128::init() {
 
     // read chip ID and verify it matches expected 0xC22018
     uint8_t id[3];
-    cs_low();
+    _spi.cs_low();
     bool ok = send_cmd(MX25_CMD_RDID) && _spi.receive(id, sizeof(id));
-    cs_high();
+    _spi.cs_high();
     if (!ok) return false;
 
     uint32_t chip_id = ((uint32_t)id[0] << 16) |
@@ -24,11 +24,11 @@ bool MX25L128::init() {
 bool MX25L128::read(uint32_t address, uint8_t* buffer, size_t length) {
     if (address >= MX25_FLASH_SIZE || length > MX25_FLASH_SIZE - address) return false;
 
-    cs_low();
+    _spi.cs_low();
     bool ok = send_cmd(MX25_CMD_READ) &&
               send_addr(address) &&
               _spi.receive(buffer, length);
-    cs_high();
+    _spi.cs_high();
 
     return ok;
 }
@@ -67,9 +67,9 @@ bool MX25L128::write(uint32_t address, const uint8_t* data, size_t length) {
 // ---- Private helpers ----
 
 bool MX25L128::write_enable() {
-    cs_low();
+    _spi.cs_low();
     bool ok = send_cmd(MX25_CMD_WREN);
-    cs_high();
+    _spi.cs_high();
     if (!ok) return false;
     return (read_status() & 0x02) != 0;  // WEL bit should be set
 }
@@ -84,29 +84,29 @@ bool MX25L128::wait_ready(uint32_t timeout_ms) {
 
 uint8_t MX25L128::read_status() {
     uint8_t status = 0xFF;
-    cs_low();
+    _spi.cs_low();
     bool ok = send_cmd(MX25_CMD_RDSR) && _spi.receive(&status, 1);
-    cs_high();
+    _spi.cs_high();
     if (!ok) return 0xFF;
     return status;
 }
 
 bool MX25L128::sector_erase(uint32_t address) {
     if (!write_enable()) return false;
-    cs_low();
+    _spi.cs_low();
     bool ok = send_cmd(MX25_CMD_SE) && send_addr(address);
-    cs_high();
+    _spi.cs_high();
     if (!ok) return false;
     return wait_ready(500);  // sector erase takes up to 400ms per MX25_DEF.h
 }
 
 bool MX25L128::page_program(uint32_t address, const uint8_t* data, size_t length) {
     if (!write_enable()) return false;
-    cs_low();
+    _spi.cs_low();
     bool ok = send_cmd(MX25_CMD_PP) &&
               send_addr(address) &&
               _spi.transmit(data, length);
-    cs_high();
+    _spi.cs_high();
     if (!ok) return false;
     return wait_ready(10);  // page program takes up to 1.5ms
 }
