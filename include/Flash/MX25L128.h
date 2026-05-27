@@ -34,8 +34,6 @@ class MX25L128 : public Flash{
     private:
         SPI_Handler& _spi;
 
-        void     cs_low();
-        void     cs_high();
         bool     send_cmd(uint8_t cmd);
         bool     send_addr(uint32_t address);
         bool     wait_ready(uint32_t timeout_ms);  // poll WIP bit
