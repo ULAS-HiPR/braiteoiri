@@ -91,9 +91,10 @@ void MS5607::send_command(std::uint8_t command)
 void MS5607::read_command(std::uint8_t command, std::uint8_t* data, std::uint16_t len)
 {
     // The MS5607 SPI protocol is command-based, so the transport layer needs to
-    // clock out the command byte exactly as provided here.
+    // clock out the command byte exactly as provided here. Do not use the
+    // register helper: it ORs the command with the MSB read bit.
     spi_handler.cs_select(0);
-    spi_handler.read_no_cs(command, data, len);
+    (void)(spi_handler.transmit(&command, 1U) && spi_handler.receive(data, len));
     spi_handler.cs_deselect(0);
 }
 
