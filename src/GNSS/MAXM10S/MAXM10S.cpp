@@ -31,9 +31,21 @@ bool MAXM10S::init()
     line_len = 0U;
     valid_fix = false;
     fresh_fix = false;
+    raw_bytes = 0U;
     seen = 0U;
     checksum_bad = 0U;
     parsed = 0U;
+    starts = 0U;
+    overflows = 0U;
+    txt_seen = 0U;
+    nav_sat_seen = 0U;
+    sats_in_view = 0U;
+    nav_sat_reported = 0U;
+    nav_sat_signal = 0U;
+    nav_sat_max_cno = 0U;
+    ant_status = 0U;
+    last_rx_byte = 0U;
+    reset_ubx_parser();
     current = gps_data{};
     return true;
 }
@@ -60,15 +72,28 @@ bool MAXM10S::service(std::size_t max_bytes)
         if (uart.read(&byte, 1U, 0U) != 1U) {
             break;
         }
+        raw_bytes++;
+        last_rx_byte = byte;
         updated = process_byte(static_cast<char>(byte)) || updated;
     }
 
     return updated;
 }
 
+bool MAXM10S::poll_navigation_satellites()
+{
+    constexpr std::uint8_t poll[] = {0xB5U, 0x62U, 0x01U, 0x35U, 0x00U, 0x00U, 0x36U, 0xA3U};
+    return uart.write(poll, sizeof(poll), 20U);
+}
+
 bool MAXM10S::fix_valid() const
 {
     return valid_fix;
+}
+
+std::uint32_t MAXM10S::bytes_seen() const
+{
+    return raw_bytes;
 }
 
 std::uint32_t MAXM10S::messages_seen() const
@@ -86,6 +111,56 @@ std::uint32_t MAXM10S::sentences_parsed() const
     return parsed;
 }
 
+std::uint32_t MAXM10S::sentences_started() const
+{
+    return starts;
+}
+
+std::uint32_t MAXM10S::line_overflows() const
+{
+    return overflows;
+}
+
+std::uint32_t MAXM10S::text_messages_seen() const
+{
+    return txt_seen;
+}
+
+std::uint32_t MAXM10S::navigation_satellite_messages_seen() const
+{
+    return nav_sat_seen;
+}
+
+std::uint8_t MAXM10S::satellites_in_view() const
+{
+    return sats_in_view;
+}
+
+std::uint8_t MAXM10S::navigation_satellites_reported() const
+{
+    return nav_sat_reported;
+}
+
+std::uint8_t MAXM10S::navigation_satellites_with_signal() const
+{
+    return nav_sat_signal;
+}
+
+std::uint8_t MAXM10S::navigation_satellite_max_cno() const
+{
+    return nav_sat_max_cno;
+}
+
+std::uint8_t MAXM10S::antenna_status() const
+{
+    return ant_status;
+}
+
+std::uint8_t MAXM10S::last_byte() const
+{
+    return last_rx_byte;
+}
+
 const gps_data& MAXM10S::last_data() const
 {
     return current;
@@ -93,9 +168,15 @@ const gps_data& MAXM10S::last_data() const
 
 bool MAXM10S::process_byte(char byte)
 {
+    std::uint8_t raw = static_cast<std::uint8_t>(byte);
+    if ((ubx_state != 0U) || (raw == 0xB5U)) {
+        return process_ubx_byte(raw);
+    }
+
     if (byte == '$') {
         line[0] = byte;
         line_len = 1U;
+        starts++;
         return false;
     }
 
@@ -112,11 +193,123 @@ bool MAXM10S::process_byte(char byte)
 
     if (line_len >= (sizeof(line) - 1U)) {
         line_len = 0U;
+        overflows++;
         return false;
     }
 
     line[line_len++] = byte;
     return false;
+}
+
+bool MAXM10S::process_ubx_byte(std::uint8_t byte)
+{
+    switch (ubx_state) {
+    case 0U:
+        ubx_state = (byte == 0xB5U) ? 1U : 0U;
+        return false;
+    case 1U:
+        if (byte == 0x62U) {
+            ubx_state = 2U;
+            ubx_ck_a = 0U;
+            ubx_ck_b = 0U;
+        } else {
+            reset_ubx_parser();
+        }
+        return false;
+    case 2U:
+        ubx_class = byte;
+        update_ubx_checksum(byte);
+        ubx_state = 3U;
+        return false;
+    case 3U:
+        ubx_id = byte;
+        update_ubx_checksum(byte);
+        ubx_state = 4U;
+        return false;
+    case 4U:
+        ubx_len = byte;
+        update_ubx_checksum(byte);
+        ubx_state = 5U;
+        return false;
+    case 5U:
+        ubx_len |= static_cast<std::uint16_t>(byte) << 8U;
+        update_ubx_checksum(byte);
+        if (ubx_len > sizeof(ubx_payload)) {
+            reset_ubx_parser();
+            return false;
+        }
+        ubx_index = 0U;
+        ubx_state = (ubx_len == 0U) ? 7U : 6U;
+        return false;
+    case 6U:
+        ubx_payload[ubx_index++] = byte;
+        update_ubx_checksum(byte);
+        if (ubx_index >= ubx_len) {
+            ubx_state = 7U;
+        }
+        return false;
+    case 7U:
+        if (byte == ubx_ck_a) {
+            ubx_state = 8U;
+        } else {
+            reset_ubx_parser();
+        }
+        return false;
+    case 8U: {
+        bool parsed_ubx = false;
+        if (byte == ubx_ck_b) {
+            parsed_ubx = parse_ubx_message();
+        }
+        reset_ubx_parser();
+        return parsed_ubx;
+    }
+    default:
+        reset_ubx_parser();
+        return false;
+    }
+}
+
+bool MAXM10S::parse_ubx_message()
+{
+    if ((ubx_class != 0x01U) || (ubx_id != 0x35U) || (ubx_len < 8U)) {
+        return false;
+    }
+
+    nav_sat_seen++;
+    nav_sat_reported = ubx_payload[5];
+    nav_sat_signal = 0U;
+    nav_sat_max_cno = 0U;
+
+    std::uint16_t offset = 8U;
+    for (std::uint8_t i = 0U; (i < nav_sat_reported) && ((offset + 12U) <= ubx_len); ++i) {
+        std::uint8_t cno = ubx_payload[offset + 2U];
+        if (cno > 0U) {
+            nav_sat_signal++;
+        }
+        if (cno > nav_sat_max_cno) {
+            nav_sat_max_cno = cno;
+        }
+        offset += 12U;
+    }
+
+    return false;
+}
+
+void MAXM10S::reset_ubx_parser()
+{
+    ubx_state = 0U;
+    ubx_class = 0U;
+    ubx_id = 0U;
+    ubx_len = 0U;
+    ubx_index = 0U;
+    ubx_ck_a = 0U;
+    ubx_ck_b = 0U;
+}
+
+void MAXM10S::update_ubx_checksum(std::uint8_t byte)
+{
+    ubx_ck_a = static_cast<std::uint8_t>(ubx_ck_a + byte);
+    ubx_ck_b = static_cast<std::uint8_t>(ubx_ck_b + ubx_ck_a);
 }
 
 bool MAXM10S::parse_sentence(const char* sentence)
@@ -149,8 +342,14 @@ bool MAXM10S::parse_sentence(const char* sentence)
     bool ok = false;
     if (message_is(fields[0], "GGA")) {
         ok = parse_gga(fields, count);
+    } else if (message_is(fields[0], "GNS")) {
+        ok = parse_gns(fields, count);
+    } else if (message_is(fields[0], "GSV")) {
+        (void)parse_gsv(fields, count);
     } else if (message_is(fields[0], "RMC")) {
         ok = parse_rmc(fields, count);
+    } else if (message_is(fields[0], "TXT")) {
+        (void)parse_txt(fields, count);
     }
 
     if (ok) {
@@ -205,6 +404,68 @@ bool MAXM10S::parse_gga(char** fields, std::size_t count)
     return true;
 }
 
+bool MAXM10S::parse_gns(char** fields, std::size_t count)
+{
+    if (count < 10U) {
+        return false;
+    }
+
+    std::uint8_t sats = 0U;
+    (void)parse_uint8(fields[7], &sats);
+    current.satellites = sats;
+
+    const char* mode = fields[6];
+    valid_fix = false;
+    if (mode != nullptr) {
+        for (const char* cursor = mode; *cursor != '\0'; ++cursor) {
+            if ((*cursor != 'N') && (*cursor != ' ')) {
+                valid_fix = true;
+                break;
+            }
+        }
+    }
+
+    if (!valid_fix) {
+        fresh_fix = false;
+        return false;
+    }
+
+    double altitude = 0.0;
+    if (!parse_float(fields[9], &altitude)) {
+        fresh_fix = false;
+        return false;
+    }
+
+    double latitude = 0.0;
+    double longitude = 0.0;
+    if (!parse_lat_lon(fields[2], fields[3], &latitude) ||
+        !parse_lat_lon(fields[4], fields[5], &longitude)) {
+        valid_fix = false;
+        fresh_fix = false;
+        return false;
+    }
+
+    current.altitude = static_cast<float>(altitude);
+    current.latitude = latitude;
+    current.longitude = longitude;
+    fresh_fix = true;
+    return true;
+}
+
+bool MAXM10S::parse_gsv(char** fields, std::size_t count)
+{
+    if (count < 4U) {
+        return false;
+    }
+
+    std::uint8_t sats = 0U;
+    if (parse_uint8(fields[3], &sats)) {
+        sats_in_view = sats;
+    }
+
+    return false;
+}
+
 bool MAXM10S::parse_rmc(char** fields, std::size_t count)
 {
     if (count < 8U) {
@@ -237,6 +498,37 @@ bool MAXM10S::parse_rmc(char** fields, std::size_t count)
     current.velocity = static_cast<float>(speed_knots * 0.514444);
     fresh_fix = true;
     return true;
+}
+
+bool MAXM10S::parse_txt(char** fields, std::size_t count)
+{
+    if (count < 5U || fields[4] == nullptr) {
+        return false;
+    }
+
+    txt_seen++;
+
+    constexpr const char* prefix = "ANTSTATUS=";
+    constexpr std::size_t prefix_len = 10U;
+    const char* text = fields[4];
+    if (std::strncmp(text, prefix, prefix_len) != 0) {
+        return false;
+    }
+
+    const char* value = text + prefix_len;
+    if (std::strcmp(value, "INIT") == 0) {
+        ant_status = 1U;
+    } else if (std::strcmp(value, "OK") == 0) {
+        ant_status = 2U;
+    } else if (std::strcmp(value, "OPEN") == 0) {
+        ant_status = 3U;
+    } else if (std::strcmp(value, "SHORT") == 0) {
+        ant_status = 4U;
+    } else {
+        ant_status = 5U;
+    }
+
+    return false;
 }
 
 bool MAXM10S::checksum_ok(const char* sentence) const
