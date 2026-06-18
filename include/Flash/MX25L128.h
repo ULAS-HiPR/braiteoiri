@@ -10,6 +10,9 @@
 #define MX25_SECTOR_SIZE    0x1000     // 4KB is the minimum that can be erased
 #define MX25_PAGE_SIZE      0x100      // 256B is the minimum that can be written
 
+#define MX25_JEDEC_ID       0xC22018
+#define W25Q128_JEDEC_ID    0xEF4018
+
 // from MX25_CMD.h (command bytes))
 #define MX25_CMD_RDID       0x9F // read chip ID
 #define MX25_CMD_RDSR       0x05 // read status register
@@ -27,6 +30,7 @@ class MX25L128 : public Flash{
         explicit MX25L128(SPI_Handler& spi) : _spi(spi) {}
 
         bool init();                                              // verify chip ID, wake up
+        uint32_t jedec_id();
         bool write(uint32_t address, const uint8_t* data, size_t length);
         bool read(uint32_t address, uint8_t* buffer, size_t length);
         bool erase(uint32_t address, size_t length);            // erases minimum 4KB sectors

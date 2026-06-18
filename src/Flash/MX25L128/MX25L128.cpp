@@ -4,21 +4,26 @@ bool MX25L128::init() {
     _spi.cs_high();
 
     // wake from deep power down just in case
-    if (!send_cmd(MX25_CMD_RDP)) return false;
+    _spi.cs_low();
+    bool wake_ok = send_cmd(MX25_CMD_RDP);
+    _spi.cs_high();
+    if (!wake_ok) return false;
     _spi.delay_ms(1);
 
-    // read chip ID and verify it matches expected 0xC22018
+    uint32_t chip_id = jedec_id();
+    return chip_id == MX25_JEDEC_ID || chip_id == W25Q128_JEDEC_ID;
+}
+
+uint32_t MX25L128::jedec_id() {
     uint8_t id[3];
     _spi.cs_low();
     bool ok = send_cmd(MX25_CMD_RDID) && _spi.receive(id, sizeof(id));
     _spi.cs_high();
-    if (!ok) return false;
+    if (!ok) return 0;
 
-    uint32_t chip_id = ((uint32_t)id[0] << 16) |
-                       ((uint32_t)id[1] <<  8) |
-                        (uint32_t)id[2];
-
-    return chip_id == 0xC22018;  // false if wrong chip or no chip
+    return ((uint32_t)id[0] << 16) |
+           ((uint32_t)id[1] <<  8) |
+            (uint32_t)id[2];
 }
 
 bool MX25L128::read(uint32_t address, uint8_t* buffer, size_t length) {
@@ -48,6 +53,8 @@ bool MX25L128::erase(uint32_t address, size_t length) {
 }
 
 bool MX25L128::write(uint32_t address, const uint8_t* data, size_t length) {
+    if (address >= MX25_FLASH_SIZE || length > MX25_FLASH_SIZE - address) return false;
+
     // write must be broken into 256 byte pages
     while (length > 0) {
         // calculate how many bytes fit in this page
@@ -63,8 +70,6 @@ bool MX25L128::write(uint32_t address, const uint8_t* data, size_t length) {
     }
     return true;
 }
-
-// ---- Private helpers ----
 
 bool MX25L128::write_enable() {
     _spi.cs_low();
