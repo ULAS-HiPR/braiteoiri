@@ -61,9 +61,10 @@ std::uint8_t clamp_power(std::int8_t dbm)
 
 } // namespace
 
-SX1272::SX1272(SPI_Handler& spi_handler, int cs_id, sx1272_pins_t gpio_pins)
+SX1272::SX1272(SPI_Handler& spi_handler, int cs_id, sx1272_pins_t gpio_pins, std::uint8_t sync_word)
     : spi(spi_handler), cs(cs_id), pins(gpio_pins)
 {
+    active_config.sync_word = sync_word;
 }
 
 bool SX1272::init()

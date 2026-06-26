@@ -13,7 +13,7 @@ public:
     bool init() override;
     bool update(gps_data* data) override;
     bool service(std::size_t max_bytes = 256U);
-    bool poll_navigation_satellites();
+    bool poll_navigation_satellites() override;
 
     bool fix_valid() const;
     std::uint32_t bytes_seen() const;
