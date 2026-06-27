@@ -29,11 +29,11 @@ class MX25L128 : public Flash{
     public:
         explicit MX25L128(SPI_Handler& spi) : _spi(spi) {}
 
-        bool init();                                              // verify chip ID, wake up
+        bool init() override;                                     // verify chip ID, wake up
         uint32_t jedec_id();
-        bool write(uint32_t address, const uint8_t* data, size_t length);
-        bool read(uint32_t address, uint8_t* buffer, size_t length);
-        bool erase(uint32_t address, size_t length);            // erases minimum 4KB sectors
+        bool write(uint32_t address, const uint8_t* data, size_t length) override;
+        bool read(uint32_t address, uint8_t* buffer, size_t length) override;
+        bool erase(uint32_t address, size_t length) override;     // erases minimum 4KB sectors
 
     private:
         SPI_Handler& _spi;
