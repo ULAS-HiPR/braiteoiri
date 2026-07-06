@@ -1,17 +1,26 @@
 #include <Flash/MX25L128.h>
 
 bool MX25L128::init() {
+    constexpr int kInitAttempts = 20;
+    constexpr int kInitDelayMs = 5;
+
     _spi.cs_high();
 
-    // wake from deep power down just in case
-    _spi.cs_low();
-    bool wake_ok = send_cmd(MX25_CMD_RDP);
-    _spi.cs_high();
-    if (!wake_ok) return false;
-    _spi.delay_ms(1);
+    for (int attempt = 0; attempt < kInitAttempts; ++attempt) {
+        // wake from deep power down just in case
+        _spi.cs_low();
+        bool wake_ok = send_cmd(MX25_CMD_RDP);
+        _spi.cs_high();
+        if (!wake_ok) return false;
+        _spi.delay_ms(kInitDelayMs);
 
-    uint32_t chip_id = jedec_id();
-    return chip_id == MX25_JEDEC_ID || chip_id == W25Q128_JEDEC_ID;
+        uint32_t chip_id = jedec_id();
+        if (chip_id == MX25_JEDEC_ID || chip_id == W25Q128_JEDEC_ID) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 uint32_t MX25L128::jedec_id() {
