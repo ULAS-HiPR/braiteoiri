@@ -54,7 +54,7 @@ struct sx1272_config_t {
 
 class SX1272 : public Radio {
 public:
-    SX1272(SPI_Handler& spi_handler, int cs_id, sx1272_pins_t pins, std::uint8_t sync_word = 0x12);
+    SX1272(SPI_Handler& spi_handler, int cs_id, sx1272_pins_t pins);
 
     bool init() override;
     bool init(const sx1272_config_t& config);
