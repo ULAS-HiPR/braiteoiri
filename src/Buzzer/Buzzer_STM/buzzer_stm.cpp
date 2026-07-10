@@ -54,11 +54,13 @@ void Buzzer_STM::play_tone(uint32_t frequency)
 
 void Buzzer_STM::play_startup()
 {
-    beep(2400, 80);
-    HAL_Delay(100);
-    beep(2400, 80);
-    HAL_Delay(100);
-    beep(2400, 80);
+    beep(2489, 90);
+    HAL_Delay(30);
+    beep(2850, 120);
+    HAL_Delay(35);
+    beep(3200, 140);
+    HAL_Delay(45);
+    beep(3600, 180);
 }
 
 void Buzzer_STM::play_error()
