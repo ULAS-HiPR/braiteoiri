@@ -24,12 +24,12 @@ public:
     bool update(baro_data* data) override;
 
 private:
-    void send_command(std::uint8_t command);
-    void read_command(std::uint8_t command, std::uint8_t* data, std::uint16_t len);
+    bool send_command(std::uint8_t command);
+    bool read_command(std::uint8_t command, std::uint8_t* data, std::uint16_t len);
     bool read_prom();
-    std::uint16_t read_prom_word(std::uint8_t index);
+    bool read_prom_word(std::uint8_t index, std::uint16_t* value);
     std::uint8_t calculate_crc4() const;
-    std::uint32_t convert_and_read(std::uint8_t command, int delay_ms);
+    bool convert_and_read(std::uint8_t command, int delay_ms, std::uint32_t* value);
     bool read_compensated_sample(std::int32_t* pressure_pa, float* temperature_c);
     float pressure_to_altitude(float pressure_pa) const;
 

@@ -11,7 +11,10 @@ bool MX25L128::init() {
         _spi.cs_low();
         bool wake_ok = send_cmd(MX25_CMD_RDP);
         _spi.cs_high();
-        if (!wake_ok) return false;
+        if (!wake_ok) {
+            _spi.delay_ms(kInitDelayMs);
+            continue;
+        }
         _spi.delay_ms(kInitDelayMs);
 
         uint32_t chip_id = jedec_id();

@@ -94,6 +94,7 @@ bool SX1272::init(const sx1272_config_t& config)
 
 bool SX1272::send(const std::uint8_t* data, std::size_t len)
 {
+    error = ERROR_NONE;
     if ((data == nullptr) || (len == 0U) || (len > 255U)) {
         error = ERROR_BAD_SEND_ARG;
         return false;
@@ -122,6 +123,7 @@ bool SX1272::send(const std::uint8_t* data, std::size_t len)
 
 bool SX1272::receive(std::uint8_t* data, std::size_t max_len, std::size_t* len)
 {
+    error = ERROR_NONE;
     if ((data == nullptr) || (len == nullptr)) {
         error = ERROR_BAD_RECEIVE_ARG;
         return false;

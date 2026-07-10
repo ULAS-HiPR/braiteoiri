@@ -77,7 +77,9 @@ bool LSM6DSO32::update(imu_data* data)
     }
 
     std::uint8_t buffer[kBurstReadLength] = {};
-    read_registers(kOutTempLReg, buffer, kBurstReadLength);
+    if (!read_registers(kOutTempLReg, buffer, kBurstReadLength)) {
+        return false;
+    }
 
     const RawSample sample{
         combine_bytes(buffer[0], buffer[1]),
@@ -108,11 +110,17 @@ bool LSM6DSO32::update(imu_data* data)
 
 bool LSM6DSO32::reset()
 {
-    write_register(kCtrl3CReg, kCtrl3CReset);
+    if (!write_register(kCtrl3CReg, kCtrl3CReset)) {
+        return false;
+    }
 
     for (int attempt = 0; attempt < 10; ++attempt) {
         spi_handler.delay_ms(1);
-        if ((read_register(kCtrl3CReg) & kCtrl3CReset) == 0U) {
+        std::uint8_t control = 0U;
+        if (!read_register(kCtrl3CReg, &control)) {
+            return false;
+        }
+        if ((control & kCtrl3CReset) == 0U) {
             return true;
         }
     }
@@ -122,39 +130,58 @@ bool LSM6DSO32::reset()
 
 bool LSM6DSO32::configure()
 {
-    write_register(
+    if (!write_register(
         kCtrl3CReg,
-        static_cast<std::uint8_t>(kCtrl3CBlockDataUpdate | kCtrl3CIncrementAddress));
-    write_register(
+        static_cast<std::uint8_t>(kCtrl3CBlockDataUpdate | kCtrl3CIncrementAddress))) {
+        return false;
+    }
+    if (!write_register(
         kCtrl1XlReg,
-        static_cast<std::uint8_t>(kOutputDataRate416Hz | static_cast<std::uint8_t>(accel_range)));
-    write_register(
+        static_cast<std::uint8_t>(kOutputDataRate416Hz | static_cast<std::uint8_t>(accel_range)))) {
+        return false;
+    }
+    if (!write_register(
         kCtrl2GReg,
-        static_cast<std::uint8_t>(kOutputDataRate416Hz | static_cast<std::uint8_t>(gyro_range)));
+        static_cast<std::uint8_t>(kOutputDataRate416Hz | static_cast<std::uint8_t>(gyro_range)))) {
+        return false;
+    }
 
-    return true;
+    std::uint8_t ctrl1 = 0U;
+    std::uint8_t ctrl2 = 0U;
+    std::uint8_t ctrl3 = 0U;
+    return read_register(kCtrl1XlReg, &ctrl1) &&
+           read_register(kCtrl2GReg, &ctrl2) &&
+           read_register(kCtrl3CReg, &ctrl3) &&
+           ctrl1 == static_cast<std::uint8_t>(
+               kOutputDataRate416Hz | static_cast<std::uint8_t>(accel_range)) &&
+           ctrl2 == static_cast<std::uint8_t>(
+               kOutputDataRate416Hz | static_cast<std::uint8_t>(gyro_range)) &&
+           (ctrl3 & static_cast<std::uint8_t>(
+               kCtrl3CBlockDataUpdate | kCtrl3CIncrementAddress)) ==
+               static_cast<std::uint8_t>(
+                   kCtrl3CBlockDataUpdate | kCtrl3CIncrementAddress);
 }
 
 bool LSM6DSO32::device_present()
 {
-    return read_register(kWhoAmIReg) == kWhoAmIValue;
+    std::uint8_t identity = 0U;
+    return read_register(kWhoAmIReg, &identity) && identity == kWhoAmIValue;
 }
 
-std::uint8_t LSM6DSO32::read_register(std::uint8_t reg)
+bool LSM6DSO32::read_register(std::uint8_t reg, std::uint8_t* value)
 {
-    std::uint8_t value = 0U;
-    read_registers(reg, &value, 1U);
-    return value;
+    return value != nullptr && read_registers(reg, value, 1U);
 }
 
-void LSM6DSO32::read_registers(std::uint8_t reg, std::uint8_t* data, std::uint16_t len)
+bool LSM6DSO32::read_registers(
+    std::uint8_t reg, std::uint8_t* data, std::uint16_t len)
 {
-    spi_handler.read(0, reg, data, len);
+    return data != nullptr && len > 0U && spi_handler.read(0, reg, data, len);
 }
 
-void LSM6DSO32::write_register(std::uint8_t reg, std::uint8_t value)
+bool LSM6DSO32::write_register(std::uint8_t reg, std::uint8_t value)
 {
-    spi_handler.write(0, reg, &value, 1U);
+    return spi_handler.write(0, reg, &value, 1U);
 }
 
 float LSM6DSO32::accel_scale_g_per_lsb() const

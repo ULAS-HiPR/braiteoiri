@@ -32,9 +32,9 @@ private:
     bool reset();
     bool configure();
     bool device_present();
-    std::uint8_t read_register(std::uint8_t reg);
-    void read_registers(std::uint8_t reg, std::uint8_t* data, std::uint16_t len);
-    void write_register(std::uint8_t reg, std::uint8_t value);
+    bool read_register(std::uint8_t reg, std::uint8_t* value);
+    bool read_registers(std::uint8_t reg, std::uint8_t* data, std::uint16_t len);
+    bool write_register(std::uint8_t reg, std::uint8_t value);
     float accel_scale_g_per_lsb() const;
     float gyro_scale_dps_per_lsb() const;
 

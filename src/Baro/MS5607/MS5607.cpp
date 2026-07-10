@@ -36,7 +36,9 @@ int conversion_delay_for_osr(ms5607_osr_t osr)
 
 bool MS5607::init()
 {
-    send_command(kCommandReset);
+    if (!send_command(kCommandReset)) {
+        return false;
+    }
     spi_handler.delay_ms(3);
 
     if (!read_prom()) {
@@ -79,45 +81,60 @@ bool MS5607::update(baro_data* data)
     return true;
 }
 
-void MS5607::send_command(std::uint8_t command)
+bool MS5607::send_command(std::uint8_t command)
 {
-    std::uint8_t unused = 0U;
-
     spi_handler.cs_select(0);
-    spi_handler.write_no_cs(command, &unused, 0U);
+    const bool ok = spi_handler.transmit(&command, 1U);
     spi_handler.cs_deselect(0);
+    return ok;
 }
 
-void MS5607::read_command(std::uint8_t command, std::uint8_t* data, std::uint16_t len)
+bool MS5607::read_command(
+    std::uint8_t command, std::uint8_t* data, std::uint16_t len)
 {
     // The MS5607 SPI protocol is command-based, so the transport layer needs to
     // clock out the command byte exactly as provided here. Do not use the
     // register helper: it ORs the command with the MSB read bit.
     spi_handler.cs_select(0);
-    (void)(spi_handler.transmit(&command, 1U) && spi_handler.receive(data, len));
+    const bool ok = data != nullptr && len > 0U &&
+                    spi_handler.transmit(&command, 1U) &&
+                    spi_handler.receive(data, len);
     spi_handler.cs_deselect(0);
+    return ok;
 }
 
 bool MS5607::read_prom()
 {
     for (std::uint8_t index = 0; index < prom.size(); ++index) {
-        prom[index] = read_prom_word(index);
+        if (!read_prom_word(index, &prom[index])) {
+            return false;
+        }
     }
 
-    return true;
+    bool coefficients_present = false;
+    for (std::uint8_t index = 1U; index <= 6U; ++index) {
+        coefficients_present |= prom[index] != 0U && prom[index] != 0xFFFFU;
+    }
+    return coefficients_present;
 }
 
-std::uint16_t MS5607::read_prom_word(std::uint8_t index)
+bool MS5607::read_prom_word(std::uint8_t index, std::uint16_t* value)
 {
+    if (value == nullptr) {
+        return false;
+    }
     std::uint8_t buffer[2] = {};
-    read_command(
+    if (!read_command(
         static_cast<std::uint8_t>(kCommandPromReadBase + (index * 2U)),
         buffer,
-        2U);
+        2U)) {
+        return false;
+    }
 
-    return static_cast<std::uint16_t>(
+    *value = static_cast<std::uint16_t>(
         (static_cast<std::uint16_t>(buffer[0]) << 8U) |
         static_cast<std::uint16_t>(buffer[1]));
+    return true;
 }
 
 std::uint8_t MS5607::calculate_crc4() const
@@ -152,18 +169,23 @@ std::uint8_t MS5607::calculate_crc4() const
     return static_cast<std::uint8_t>((remainder >> 12U) & 0x0FU);
 }
 
-std::uint32_t MS5607::convert_and_read(std::uint8_t command, int delay_ms)
+bool MS5607::convert_and_read(
+    std::uint8_t command, int delay_ms, std::uint32_t* value)
 {
+    if (value == nullptr || !send_command(command)) {
+        return false;
+    }
     std::uint8_t buffer[3] = {};
-
-    send_command(command);
     spi_handler.delay_ms(delay_ms);
-    read_command(kCommandAdcRead, buffer, 3U);
+    if (!read_command(kCommandAdcRead, buffer, 3U)) {
+        return false;
+    }
 
-    return
+    *value =
         (static_cast<std::uint32_t>(buffer[0]) << 16U) |
         (static_cast<std::uint32_t>(buffer[1]) << 8U) |
         static_cast<std::uint32_t>(buffer[2]);
+    return *value != 0U && *value != 0xFFFFFFU;
 }
 
 bool MS5607::read_compensated_sample(std::int32_t* pressure_pa, float* temperature_c)
@@ -173,12 +195,18 @@ bool MS5607::read_compensated_sample(std::int32_t* pressure_pa, float* temperatu
     }
 
     const int delay_ms = conversion_delay_for_osr(osr);
-    const std::uint32_t d1 = convert_and_read(
+    std::uint32_t d1 = 0U;
+    std::uint32_t d2 = 0U;
+    if (!convert_and_read(
         static_cast<std::uint8_t>(kCommandConvertD1Base | static_cast<std::uint8_t>(osr)),
-        delay_ms);
-    const std::uint32_t d2 = convert_and_read(
+        delay_ms,
+        &d1) ||
+        !convert_and_read(
         static_cast<std::uint8_t>(kCommandConvertD2Base | static_cast<std::uint8_t>(osr)),
-        delay_ms);
+        delay_ms,
+        &d2)) {
+        return false;
+    }
 
     const std::int64_t d_t = static_cast<std::int64_t>(d2) -
         (static_cast<std::int64_t>(prom[5]) << 8U);
@@ -215,6 +243,10 @@ bool MS5607::read_compensated_sample(std::int32_t* pressure_pa, float* temperatu
 
     if ((pressure < static_cast<std::int64_t>(std::numeric_limits<std::int32_t>::min())) ||
         (pressure > static_cast<std::int64_t>(std::numeric_limits<std::int32_t>::max()))) {
+        return false;
+    }
+
+    if (pressure <= 0 || pressure > 120000) {
         return false;
     }
 
