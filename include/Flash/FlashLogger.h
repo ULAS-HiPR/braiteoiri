@@ -25,6 +25,7 @@ struct FlashLogConfig {
     uint32_t write_alignment;
     uint32_t max_payload_size;
     bool verify_writes;
+    bool verify_existing_payloads_on_begin;
 };
 
 struct __attribute__((packed)) FlashLogRecordHeader {

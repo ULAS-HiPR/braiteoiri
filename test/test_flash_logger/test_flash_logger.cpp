@@ -113,6 +113,7 @@ static FlashLogConfig test_config(uint32_t length) {
     config.write_alignment = 4U;
     config.max_payload_size = 64U;
     config.verify_writes = true;
+    config.verify_existing_payloads_on_begin = true;
     return config;
 }
 
@@ -264,12 +265,36 @@ static void test_payload_corruption_blocks_append_until_explicit_erase() {
     CHECK_EQ(1U, reader.info().record_count);
 }
 
+static void test_payload_verification_can_be_deferred_during_begin() {
+    FakeFlash flash(256U);
+    FlashLogConfig config = test_config(256U);
+
+    FlashLogger writer(flash);
+    CHECK_TRUE(writer.begin(config));
+
+    uint32_t record_address = 0U;
+    const uint8_t first_payload[] = {0xFFU, 0xAAU, 0x55U};
+    CHECK_TRUE(writer.append(first_payload, sizeof(first_payload), 123U, &record_address));
+    flash.clear_bits(record_address + sizeof(FlashLogRecordHeader), 0xFEU);
+
+    config.verify_existing_payloads_on_begin = false;
+    FlashLogger recovered(flash);
+    CHECK_TRUE(recovered.begin(config));
+    CHECK_EQ(1U, recovered.info().record_count);
+    CHECK_EQ(2U, recovered.info().run_id);
+
+    const uint8_t second_payload[] = {1U, 2U, 3U, 4U};
+    CHECK_TRUE(recovered.append(second_payload, sizeof(second_payload), 124U));
+    CHECK_EQ(2U, recovered.info().record_count);
+}
+
 int main() {
     test_begin_allocates_next_run_id_from_existing_records();
     test_full_log_does_not_wrap_or_overwrite();
     test_exactly_full_log_reports_not_append_ready();
     test_uncommitted_record_is_skipped_after_reboot();
     test_payload_corruption_blocks_append_until_explicit_erase();
+    test_payload_verification_can_be_deferred_during_begin();
     std::puts("FlashLogger tests passed");
     return 0;
 }

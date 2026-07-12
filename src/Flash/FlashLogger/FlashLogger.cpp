@@ -27,6 +27,7 @@ FlashLogConfig FlashLogger::default_mx25_config(uint32_t start_address,
     config.write_alignment = 4U;
     config.max_payload_size = MAX_DEFAULT_PAYLOAD_SIZE;
     config.verify_writes = true;
+    config.verify_existing_payloads_on_begin = true;
     return config;
 }
 
@@ -378,7 +379,8 @@ bool FlashLogger::scan() {
             continue;
         }
 
-        if (!payload_checksum_matches(address, header)) {
+        if (config_.verify_existing_payloads_on_begin &&
+            !payload_checksum_matches(address, header)) {
             next_address_ = address;
             status_ = FlashLogStatus::Corrupt;
             return false;
