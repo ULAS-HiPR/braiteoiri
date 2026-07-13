@@ -10,6 +10,7 @@ constexpr uint32_t MAX_DEFAULT_PAYLOAD_SIZE = 1024U;
 constexpr uint32_t MX25_DEFAULT_SECTOR_SIZE = 0x1000U;
 constexpr uint32_t BLANK_CHECK_CHUNK = 64U;
 constexpr uint32_t VERIFY_CHUNK = 64U;
+constexpr uint32_t VERIFY_ATTEMPTS = 3U;
 
 bool range_overflows(uint32_t start, uint32_t length) {
     return length == 0U || start > (UINT32_MAX - length);
@@ -196,7 +197,7 @@ bool FlashLogger::append_typed(const void* payload,
         return false;
     }
 
-    if (config_.verify_writes && !verify_record(address, header)) {
+    if (config_.verify_writes && !verify_record_with_retries(address, header)) {
         latch_append_failure(FlashLogStatus::VerifyFailed);
         return false;
     }
@@ -211,7 +212,8 @@ bool FlashLogger::append_typed(const void* payload,
 
     FlashLogRecordHeader committed_header = header;
     committed_header.commit_marker = FLASH_LOG_COMMITTED;
-    if (config_.verify_writes && !verify_record(address, committed_header)) {
+    if (config_.verify_writes &&
+        !verify_record_with_retries(address, committed_header)) {
         latch_append_failure(FlashLogStatus::VerifyFailed);
         return false;
     }
@@ -496,6 +498,17 @@ bool FlashLogger::verify_record(uint32_t address,
     }
 
     return payload_checksum_matches(address, expected_header);
+}
+
+bool FlashLogger::verify_record_with_retries(
+    uint32_t address,
+    const FlashLogRecordHeader& expected_header) {
+    for (uint32_t attempt = 0U; attempt < VERIFY_ATTEMPTS; ++attempt) {
+        if (verify_record(address, expected_header)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool FlashLogger::blank(uint32_t address, uint32_t length) {

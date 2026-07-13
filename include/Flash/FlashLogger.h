@@ -156,6 +156,9 @@ class FlashLogger {
                                       const FlashLogRecordHeader& header);
         bool verify_record(uint32_t address,
                            const FlashLogRecordHeader& expected_header);
+        bool verify_record_with_retries(
+            uint32_t address,
+            const FlashLogRecordHeader& expected_header);
         bool blank(uint32_t address, uint32_t length);
         bool erased_header(const FlashLogRecordHeader& header) const;
         bool valid_header(const FlashLogRecordHeader& header) const;

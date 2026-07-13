@@ -73,6 +73,10 @@ public:
         }
 
         std::memcpy(buffer, &memory[address], length);
+        if (corrupt_verify_read && write_count >= 2U && length > 0U) {
+            buffer[0] ^= 0x01U;
+            corrupt_verify_read = false;
+        }
         return true;
     }
 
@@ -99,10 +103,15 @@ public:
         fail_on_write_count = std::numeric_limits<size_t>::max();
     }
 
+    void corrupt_next_verify_read() {
+        corrupt_verify_read = true;
+    }
+
 private:
     std::vector<uint8_t> memory;
     size_t write_count = 0U;
     size_t fail_on_write_count = std::numeric_limits<size_t>::max();
+    bool corrupt_verify_read = false;
 };
 
 static FlashLogConfig test_config(uint32_t length) {
@@ -288,6 +297,20 @@ static void test_payload_verification_can_be_deferred_during_begin() {
     CHECK_EQ(2U, recovered.info().record_count);
 }
 
+static void test_transient_verify_read_is_retried() {
+    FakeFlash flash(256U);
+    const FlashLogConfig config = test_config(256U);
+
+    FlashLogger logger(flash);
+    CHECK_TRUE(logger.begin(config));
+
+    const uint8_t payload[] = {1U, 2U, 3U, 4U};
+    flash.corrupt_next_verify_read();
+    CHECK_TRUE(logger.append(payload, sizeof(payload), 123U));
+    CHECK_EQ(FlashLogStatus::Ok, logger.status());
+    CHECK_EQ(1U, logger.info().record_count);
+}
+
 int main() {
     test_begin_allocates_next_run_id_from_existing_records();
     test_full_log_does_not_wrap_or_overwrite();
@@ -295,6 +318,7 @@ int main() {
     test_uncommitted_record_is_skipped_after_reboot();
     test_payload_corruption_blocks_append_until_explicit_erase();
     test_payload_verification_can_be_deferred_during_begin();
+    test_transient_verify_read_is_retried();
     std::puts("FlashLogger tests passed");
     return 0;
 }
